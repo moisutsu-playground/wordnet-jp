@@ -49,11 +49,9 @@ def getWordsFromSenses(sense, lang="jpn"):
 def getSynonym(word):
     synonym = {}
     words = getWords(word)
-    print(words)
     if words:
         for w in words:
             sense = getSenses(w)
-            print(sense)
             s = getWordsFromSenses(sense)
             synonym = dict(list(synonym.items()) + list(s.items()))
     synonym = sorted({x for v in synonym.values() for x in v if x != word})
