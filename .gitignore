@@ -1,6 +1,7 @@
 /data/*
 !/data/.gitkeep
-corpus
+/corpus/*
+!/corpus/.gitkeep
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
