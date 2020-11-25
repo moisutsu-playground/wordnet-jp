@@ -2,7 +2,7 @@ from pathlib import Path
 from argparse import ArgumentParser
 
 from wordnet_json import load_words
-from wordnet_db import getSynonym, getHypernym
+from wordnet_db import getSynonym, getHypernym, getCohyponym
 
 
 def main(args):
@@ -20,6 +20,13 @@ def main(args):
                 if len(hypernym) == 0:
                     continue
                 f.write(f"{word}\t{' '.join(hypernym)}\n")
+    elif args.mode == "cohyponym":
+        with Path(args.output_path).open("w") as f:
+            for word in load_words():
+                cohyponym = getCohyponym(word)
+                if len(cohyponym) == 0:
+                    continue
+                f.write(f"{word}\t{' '.join(cohyponym)}\n")
     else:
         raise ValueError(f"No such mode '{args.mode}''")
 

@@ -57,36 +57,105 @@ def getSynonym(word):
     synonym = sorted({x for v in synonym.values() for x in v if x != word})
     return synonym
 
-# Key: 下位語(str), value: 上位語(List[str])
-hierarchy_dict = None
 
-def init_hierarchy_dict():
-    global hierarchy_dict
-    hierarchy_dict = {}
+# Key: 下位語(str), value: 上位語(List[str])
+to_hypernym_dict = None
+
+
+def init_to_hypernym_dict():
+    global to_hypernym_dict
+    to_hypernym_dict = {}
     cur = conn.execute("select synset1,synset2 from synlink where link='hypo'")
     for row in cur:
         n_term = row[0]
         b_term = row[1]
 
-        if b_term not in hierarchy_dict:
-            hierarchy_dict[b_term] = []
+        if b_term not in to_hypernym_dict:
+            to_hypernym_dict[b_term] = []
 
-        hierarchy_dict[b_term].append(n_term)
+        to_hypernym_dict[b_term].append(n_term)
+
+
+# Key: 上位語(str), value: 下位語(List[str])
+to_hyponym_dict = None
+
+
+def init_to_hyponym_dict():
+    global to_hyponym_dict
+    to_hyponym_dict = {}
+    cur = conn.execute("select synset1,synset2 from synlink where link='hypo'")
+    for row in cur:
+        b_term = row[0]
+        n_term = row[1]
+
+        if b_term not in to_hyponym_dict:
+            to_hyponym_dict[b_term] = []
+
+        to_hyponym_dict[b_term].append(n_term)
+
 
 def getHypernym(word):
-    if hierarchy_dict is None:
-        init_hierarchy_dict()
+    if to_hypernym_dict is None:
+        init_to_hypernym_dict()
     hypernym = []
     words = getWords(word)
     if words:
         for w in words:
             senses = getSenses(w)
             for sense in senses:
-                if not sense.synset in hierarchy_dict:
+                if not sense.synset in to_hypernym_dict:
                     return []
-                hypersynsets = hierarchy_dict[sense.synset]
+                hypersynsets = to_hypernym_dict[sense.synset]
                 for hypersynset in hypersynsets:
                     hyper_words = getWordsFromSynset(hypersynset, "jpn")
-                    hypernym.extend([hyper_word.lemma for hyper_word in hyper_words if hyper_word.lemma != word])
+                    hypernym.extend(
+                        [
+                            hyper_word.lemma
+                            for hyper_word in hyper_words
+                            if hyper_word.lemma != word
+                        ]
+                    )
     hypernym = list(set(hypernym))
     return hypernym
+
+
+def getCohyponym(word):
+    if to_hypernym_dict is None:
+        init_to_hypernym_dict()
+    if to_hyponym_dict is None:
+        init_to_hyponym_dict()
+
+    cohyponym = []
+
+    words = getWords(word)
+    if words:
+        for w in words:
+            senses = getSenses(w)
+            hyponym_synsets = []
+            for sense in senses:
+                if not sense.synset in to_hypernym_dict:
+                    return []
+                hyper_synsets = to_hypernym_dict[sense.synset]
+
+                for hyper_synset in hyper_synsets:
+                    hyponym_synsets.extend(to_hyponym_dict[hyper_synset])
+
+            hyponym_synsets = list(
+                set(
+                    [
+                        hyponym_synset
+                        for hyponym_synset in hyponym_synsets
+                        if not hyponym_synset in [sense.synset for sense in senses]
+                    ]
+                )
+            )
+            for hyponym_synset in hyponym_synsets:
+                cohypo_words = getWordsFromSynset(hyponym_synset, "jpn")
+                cohyponym.extend(
+                    cohypo_word.lemma
+                    for cohypo_word in cohypo_words
+                    if cohypo_word.lemma != word
+                )
+
+    cohyponym = list(set(cohyponym))
+    return cohyponym
