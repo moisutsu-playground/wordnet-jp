@@ -118,6 +118,30 @@ def getHypernym(word):
     hypernym = list(set(hypernym))
     return hypernym
 
+def getHyponym(word):
+    if to_hyponym_dict is None:
+        init_to_hyponym_dict()
+    hyponym = []
+    words = getWords(word)
+    if words:
+        for w in words:
+            senses = getSenses(w)
+            for sense in senses:
+                if not sense.synset in to_hyponym_dict:
+                    return []
+                hyposynsets = to_hyponym_dict[sense.synset]
+                for hyposynset in hyposynsets:
+                    hypo_words = getWordsFromSynset(hyposynset, "jpn")
+                    hyponym.extend(
+                        [
+                            hypo_word.lemma
+                            for hypo_word in hypo_words
+                            if hypo_word.lemma != word
+                        ]
+                    )
+    hyponym = list(set(hyponym))
+    return hyponym
+
 
 def getCohyponym(word):
     if to_hypernym_dict is None:
